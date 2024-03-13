@@ -1,12 +1,20 @@
 import numpy as np
+import time
 import scipy
 import scipy.linalg as la
 import scipy.sparse.linalg as sparse_la
+
+from IPython.display import display, clear_output
+import matplotlib.pyplot as plt
 
 # Conversion funtions
 def int_to_bin(i, n):
     '''Convert a given integer to a bitstring of fixed length using 0 -> 0..00 convention.'''
     return bin(i)[2:].zfill(n)
+
+def bin_to_int(s):
+    '''Convert a given bitstring to an integer.'''
+    return int(s,2)
 
 def bin_to_spin(b):
     '''Convert a binary string to a spin configuration using 0 -> +1 convention.'''
@@ -133,7 +141,7 @@ def get_basis_state(i,n):
     psi[i] = 1
     return psi
 
-# General helper functions
+# MCMC functions
 def is_stochastic(P):
     '''Checks if matrix P is left stochastic, i.e., columns add up to one.'''
     col_sums = np.sum(P, axis=0)
@@ -160,3 +168,39 @@ def get_delta(P):
     sorted_vals = sorted(vals, reverse=True)
     assert np.isclose(sorted_vals[0], 1), f'The largest eigenvalue {sorted_vals[0]} differs from 1.'
     return np.real(sorted_vals[0] - sorted_vals[1])
+
+def get_transition(P, state):
+    '''Generate a random transition from a given state using a given transition matrix.'''
+    if type(state) == type('s'): state = bin_to_int(state)
+    return np.random.choice(P.shape[0], p=P[:,state])
+
+def get_trajectory(P, num_moves, initial_state=None): 
+    '''Generate a trajectory of <num_moves> moves based on the transition matrix <P>.'''
+    if initial_state is None: initial_state = np.random.randint(P.shape[0])
+    if type(initial_state) == type('s'): initial_state = bin_to_int(initial_state)
+    trajectory = np.empty(num_moves+1, dtype='int')
+    trajectory[0] = initial_state
+    for i in range(1, num_moves+1):
+        trajectory[i] = get_transition(P, trajectory[i-1])
+    return trajectory
+
+# Other useful functions
+def display_video(video, fps=30):
+    """
+    Display a 3D numpy array as a video in a Jupyter notebook.
+
+    Parameters:
+    array (numpy.ndarray): A 3D numpy array where each slice along the 3rd axis is a frame.
+    fps (int): Frames per second, controls the speed of the video.
+    """
+    n_frames = video.shape[0]
+    fig, ax = plt.subplots()
+    img = ax.imshow(video[0,:,:], interpolation='nearest')
+    for i in range(n_frames):
+        frame = video[i,:,:]
+        img.set_data(frame)
+        display(fig)
+        clear_output(wait=True)
+        time.sleep(1 / fps)
+    plt.close(fig)
+
