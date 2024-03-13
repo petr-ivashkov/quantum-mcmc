@@ -184,6 +184,19 @@ def get_trajectory(P, num_moves, initial_state=None):
         trajectory[i] = get_transition(P, trajectory[i-1])
     return trajectory
 
+def samples_to_counts(samples, dtype='str'):
+    'Convert sample list to a dictionary of counts'
+    counts = {}
+    if dtype == 'str':
+        for sample in samples:
+            if sample in counts: counts[sample] += 1
+            else: counts[sample] = 1
+    if dtype == 'int':
+        for sample in samples:
+            if bin_to_int(sample) in counts: counts[bin_to_int(sample)] += 1
+            else: counts[bin_to_int(sample)] = 1  
+    return counts
+
 # Other useful functions
 def display_video(video, fps=30):
     """
