@@ -23,7 +23,7 @@ def int_to_spin(i, n):
 # Problem instance
 class IsingModel:
     '''
-    Represents an Ising model with given parameters.
+    Represents an Ising model with given parameters J and h.
 
     Attributes:
     - n (int): Number of spins.
@@ -34,11 +34,10 @@ class IsingModel:
     - h_rescaled (numpy.ndarray): Rescaled external field.
     - E (numpy.ndarray): Energies of all possible spin configurations.
     '''
-    def __init__(self, J, h, T = 1):
+    def __init__(self, J, h):
         self.h = h
         self.n = h.size
         self.J = J
-        self.T = T 
 
         assert np.allclose(J.T, J), 'J must be symmetric.'
         assert np.all(np.diag(J) == 0), 'Diagonal elements of J must be zero.'
@@ -51,6 +50,15 @@ class IsingModel:
         for i in range(2**self.n):
             s = int_to_spin(i, self.n)
             self.E[i] = -0.5*(s @ J @ s) - s @ h
+
+class RandomIsingModel(IsingModel):
+    '''
+    Represents a randomly generated Ising model with a given number of qubits.
+    '''
+    def __init__(self, n):
+        h = generate_random_h(n)
+        J = generate_random_J(n)
+        super().__init__(J, h)
 
 # Useful quantum definitions - taken from D. Layden et al [Nature 619, 282–287 (2023)] 
 def my_kron(arr_list):
@@ -113,7 +121,6 @@ def get_proposal_mat_local(m, hamming_radius=1):
         s_i = int_to_bin(i,m.n)
         for j in range(2**m.n):
             s_j = int_to_bin(j,m.n)
-            if i == j: continue # sum for j != i
             if hamming(s_i, s_j) > hamming_radius: continue # only local spinflips can be proposed
             proposal_mat[i,j] = p_propose
     return proposal_mat
@@ -132,14 +139,15 @@ def is_stochastic(P):
     col_sums = np.sum(P, axis=0)
     return np.all(P >= 0) and np.allclose(col_sums, 1)
 
-def get_transition_matrix(m, proposal_mat):
+def get_transition_matrix(m, T, proposal_mat):
     '''Generate a MC transition probability matrix using Metropolis-Hastings algorithm.'''
     P = np.zeros((2**m.n, 2**m.n))
     for i in range(2**m.n):
         for j in range(2**m.n):
             if i == j: continue # sum for j != i
             dE = m.E[i] - m.E[j] # E_new - E_old
-            A = min(1, np.exp(-dE / m.T)) # MH acceptance
+            if dE > 0: A = np.exp(-dE / T) # MH acceptance
+            else: A = 1 # only compute the exponential if dE > 0 to avoid overflows
             P[i,j] = A * proposal_mat[i,j]
     for i in range(2**m.n):
         P[i,i] = 1 - sum(P[:,i]) # sum for j == i for normalization
@@ -148,7 +156,7 @@ def get_transition_matrix(m, proposal_mat):
 
 def get_delta(P):
     '''Calculate the spectral gap of the transition matrix P.'''
-    vals, _ = sparse_la.eigs(P)
+    vals = la.eigvals(P) # sparse_la.eigs has problems converging for n > 5
     sorted_vals = sorted(vals, reverse=True)
     assert np.isclose(sorted_vals[0], 1), f'The largest eigenvalue {sorted_vals[0]} differs from 1.'
     return np.real(sorted_vals[0] - sorted_vals[1])
