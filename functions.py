@@ -50,7 +50,7 @@ class IsingModel:
         assert np.allclose(J.T, J), 'J must be symmetric.'
         assert np.all(np.diag(J) == 0), 'Diagonal elements of J must be zero.'
 
-        self.alpha = ( self.n / np.sqrt(la.norm(J, ord='fro')**2 + la.norm(h, ord=2)**2))
+        self.alpha = np.sqrt(self.n / (la.norm(J, ord='fro')**2 + la.norm(h, ord=2)**2))
         self.J_rescaled = self.J * self.alpha 
         self.h_rescaled = self.h * self.alpha
 
