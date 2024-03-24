@@ -50,14 +50,15 @@ class IsingModel:
         assert np.allclose(J.T, J), 'J must be symmetric.'
         assert np.all(np.diag(J) == 0), 'Diagonal elements of J must be zero.'
 
-        scale = ( self.n / np.sqrt(la.norm(J, ord='fro')**2 + la.norm(h, ord=2)**2))
-        self.J_rescaled = self.J * scale 
-        self.h_rescaled = self.h * scale
+        self.alpha = ( self.n / np.sqrt(la.norm(J, ord='fro')**2 + la.norm(h, ord=2)**2))
+        self.J_rescaled = self.J * self.alpha 
+        self.h_rescaled = self.h * self.alpha
 
         self.E = np.zeros((2**self.n))
         for i in range(2**self.n):
             s = int_to_spin(i, self.n)
-            self.E[i] = -0.5*(s @ J @ s) - s @ h
+            self.E[i] = -0.5*(s @ self.J @ s) - s @ self.h
+        self.E_rescaled = self.E.copy() * self.alpha
 
 class RandomIsingModel(IsingModel):
     '''
@@ -123,14 +124,17 @@ def get_proposal_mat_local(m, hamming_radius=1):
     '''Get a local proposal matrix for a given Ising model. Only configurations
        within a specified Hamming radius can be proposed.'''
     assert hamming_radius <= m.n
-    p_propose = 1 / sum([scipy.special.binom(m.n,r) for r in range(hamming_radius+1)]) # proposal probability
+    # Note: diagonal elements of proposal_mat must be zero
+    p_propose = 1 / sum([scipy.special.binom(m.n,r) for r in range(1,hamming_radius+1)]) # proposal probability
     proposal_mat = np.zeros((2**m.n, 2**m.n))
     for i in range(2**m.n):
         s_i = int_to_bin(i,m.n)
         for j in range(2**m.n):
             s_j = int_to_bin(j,m.n)
             if hamming(s_i, s_j) > hamming_radius: continue # only local spinflips can be proposed
+            if i == j: continue
             proposal_mat[i,j] = p_propose
+    assert is_stochastic(proposal_mat), 'Something went wrong: Matrix is not stochastic.' 
     return proposal_mat
 
 # Functions for generating a quantum proposal
@@ -164,10 +168,10 @@ def get_transition_matrix(m, T, proposal_mat):
 
 def get_delta(P):
     '''Calculate the spectral gap of the transition matrix P.'''
-    vals = la.eigvals(P) # sparse_la.eigs has problems converging for n > 5
+    vals = np.abs(la.eigvals(P)) # sparse_la.eigs has problems converging for n > 5
     sorted_vals = sorted(vals, reverse=True)
     assert np.isclose(sorted_vals[0], 1), f'The largest eigenvalue {sorted_vals[0]} differs from 1.'
-    return np.real(sorted_vals[0] - sorted_vals[1])
+    return sorted_vals[0] - sorted_vals[1]
 
 def get_transition(P, state):
     '''Generate a random transition from a given state using a given transition matrix.'''
@@ -208,7 +212,7 @@ def display_video(video, fps=30):
     """
     n_frames = video.shape[0]
     fig, ax = plt.subplots()
-    img = ax.imshow(video[0,:,:], interpolation='nearest')
+    img = ax.imshow(video[0,:,:], interpolation='nearest', origin='lower')
     for i in range(n_frames):
         frame = video[i,:,:]
         img.set_data(frame)
