@@ -1,11 +1,18 @@
+# Linear algebra
 import numpy as np
-import time
 import scipy
 import scipy.linalg as la
 import scipy.sparse.linalg as sparse_la
 
+# Plotting and output
 from IPython.display import display, clear_output
 import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Useful stuff
+import time
+import pickle
+import tqdm
 
 # Conversion funtions
 def int_to_bin(i, n):
