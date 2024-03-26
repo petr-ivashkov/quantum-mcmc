@@ -125,11 +125,12 @@ def get_proposal_mat_local(m, hamming_radius=1):
        within a specified Hamming radius can be proposed.'''
     assert hamming_radius <= m.n
     # Note: diagonal elements of proposal_mat must be zero
+    d= 2**m.n
     p_propose = 1 / sum([scipy.special.binom(m.n,r) for r in range(1,hamming_radius+1)]) # proposal probability
-    proposal_mat = np.zeros((2**m.n, 2**m.n))
-    for i in range(2**m.n):
+    proposal_mat = np.zeros((d,d))
+    for i in range(d):
         s_i = int_to_bin(i,m.n)
-        for j in range(2**m.n):
+        for j in range(d):
             s_j = int_to_bin(j,m.n)
             if hamming(s_i, s_j) > hamming_radius: continue # only local spinflips can be proposed
             if i == j: continue
@@ -145,6 +146,99 @@ def get_basis_state(i,n):
     psi[i] = 1
     return psi
 
+def get_proposal_mat_quantum(m, gamma=0.7, t=1):
+    '''Get a quantum proposal matrix for a given Ising model.'''
+    H_zz = sum([-m.J_rescaled[i,j]*Z(i,m.n) @ Z(j,m.n) for i in range(m.n) for j in range(i+1,m.n)]) # note that the factor 1/2 is not needed here
+    H_z = sum([-m.h_rescaled[i]*Z(i,m.n) for i in range(m.n)])
+    H_x = sum([X(i,m.n) for i in range(m.n)])
+    
+    H = (1-gamma) *(H_zz + H_z) + gamma*H_x
+    U = sparse_la.expm(-1j * H * t) # time evoluiton operator
+    proposal_mat = np.abs(U)**2
+
+    assert is_stochastic(proposal_mat), 'Proposal matrix is not stochastic.'
+    return proposal_mat
+
+def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time_range=(2,20)):
+    '''Get a quantum proposal matrix for a given Ising model averaged over time and gamma.'''
+    # Constructing the Ising and mixing Hamiltonians
+    H_zz = sum([-m.J_rescaled[i,j]*Z(i,m.n) @ Z(j,m.n) for i in range(m.n) for j in range(i+1,m.n)]) # note that the factor 1/2 is not needed here
+    H_z = sum([-m.h_rescaled[i]*Z(i,m.n) for i in range(m.n)])
+    H_x = sum([X(i,m.n) for i in range(m.n)])
+
+    gamma_range = np.linspace(gamma_lims[0], gamma_lims[1], gamma_steps)
+    t_min = time_range[0]
+    t_max = time_range[1]
+
+    d = 2**m.n
+    proposal_mat_arr = []
+    for gamma in gamma_range:
+        H = (1-gamma) *(H_zz + H_z) + gamma*H_x
+        vals, vecs = la.eigh(H)
+
+        # Construct transition weight matrix for to time averaging (analytical expression)
+        transition_weight_mat = np.zeros((d,d))
+        for i in range(d):
+            for j in range(i+1,d):
+                dlambda = vals[i] - vals[j]
+                if dlambda != 0:
+                    transition_weight_mat[i,j] = (np.sin(dlambda*t_max) - np.sin(dlambda*t_min) ) / (dlambda * (t_max-t_min))
+                else: transition_weight_mat[i,j] = 1
+        transition_weight_mat = transition_weight_mat + transition_weight_mat.T + np.eye(d)
+        # Constructing the time-averaged proposal matrix
+        Q = np.zeros((d,d))
+        for i in range(d):
+            for j in range(i,d):
+                A = np.outer(vecs[i], vecs[i])
+                B = np.outer(vecs[j], vecs[j])
+                Q[i,j] = np.sum(A*B*transition_weight_mat)
+        Q = Q + Q.T - np.diag(np.diag(Q))
+        proposal_mat_arr.append(Q)
+
+    # Take an average over gammas
+    proposal_mat = np.mean(proposal_mat_arr, axis=0) 
+    assert is_stochastic(proposal_mat), 'Proposal matrix is not stochastic.'
+    return proposal_mat
+
+def get_proposal_mat_quantum_layden(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time_range=(2,20)):
+    '''
+    Returns a 2**n * 2**n stochastic proposal matrix for our quantum method of suggesting moves,
+    with no Trotter, gate or SPAM errors.
+
+    Taken from D. Layden et al [Nature 619, 282–287 (2023)].
+
+    This function is optimized and is significantly faster than <get_proposal_mat_quantum_avg>.
+    ''' 
+    def cont_eig(Dlambda):
+        t_0, t_f = time_range[0], time_range[1] # evolution time t ~ unif(t_0, t_f)
+        x = np.sin(Dlambda*t_f) - np.sin(Dlambda*t_0) # from analytical expression for transition probabilities
+        return np.divide(2*x/(t_f-t_0), Dlambda, out=np.ones_like(Dlambda), where=(Dlambda!=0) ) 
+    
+    n = m.n 
+
+    H_zz = sum([-m.J_rescaled[i,j]*Z(i,m.n) @ Z(j,m.n) for i in range(m.n) for j in range(i+1,m.n)]) # note that the factor 1/2 is not needed here
+    H_z = H_zz + sum([-m.h_rescaled[i]*Z(i,m.n) for i in range(m.n)])
+    H_x = sum([X(i,n) for i in range(n)])
+
+    d = 2**n
+    a = np.arange(d**2)
+    mask = (a//d >= a%d)
+    ones = np.ones(d)
+
+    gamma_range = np.linspace(gamma_lims[0], gamma_lims[1], gamma_steps)
+
+    prop_list = []
+    for gamma in gamma_range:
+        H = (1-gamma)*H_z + gamma*H_x
+        vals, vecs = la.eigh(H)
+        vals_diff = (np.kron(vals, ones) - np.kron(ones, vals))[mask]
+        M = la.khatri_rao(vecs.T, vecs.T)[mask]
+        Q = M.T * cont_eig(vals_diff) @ M 
+        prop_list.append(Q)
+    
+    proposal_mat = sum(prop_list)/gamma_steps
+    return proposal_mat
+
 # MCMC functions
 def is_stochastic(P):
     '''Checks if matrix P is left stochastic, i.e., columns add up to one.'''
@@ -153,15 +247,16 @@ def is_stochastic(P):
 
 def get_transition_matrix(m, T, proposal_mat):
     '''Generate a MC transition probability matrix using Metropolis-Hastings algorithm.'''
-    P = np.zeros((2**m.n, 2**m.n))
-    for i in range(2**m.n):
-        for j in range(2**m.n):
+    d = 2**m.n
+    P = np.zeros((d,d))
+    for i in range(d):
+        for j in range(d):
             if i == j: continue # sum for j != i
             dE = m.E[i] - m.E[j] # E_new - E_old
             if dE > 0: A = np.exp(-dE / T) # MH acceptance
             else: A = 1 # only compute the exponential if dE > 0 to avoid overflows
             P[i,j] = A * proposal_mat[i,j]
-    for i in range(2**m.n):
+    for i in range(d):
         P[i,i] = 1 - sum(P[:,i]) # sum for j == i for normalization
     assert is_stochastic(P), 'Something went wrong: P is not stochastic.'
     return P
