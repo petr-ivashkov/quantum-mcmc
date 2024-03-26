@@ -101,9 +101,8 @@ def Z(i, n):
 # Functions to generate a random instance 
 def generate_random_J(n):
     '''Generate a random symmetric coupling matrix for n sites, sampled from N(0,1).'''
-    J = np.random.standard_normal((n, n))
-    J = 0.5 * (J + J.T)  # Ensure symmetry
-    np.fill_diagonal(J, 0)  # No self-interactions
+    J = np.triu(np.random.standard_normal((n,n)), k=1) # No self-interactions
+    J = J + J.T # Ensure symmetry
     return J
 
 def generate_random_h(n):
@@ -159,7 +158,7 @@ def get_proposal_mat_quantum(m, gamma=0.7, t=1):
     assert is_stochastic(proposal_mat), 'Proposal matrix is not stochastic.'
     return proposal_mat
 
-def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time_range=(2,20)):
+def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time_lims=(2,20)):
     '''Get a quantum proposal matrix for a given Ising model averaged over time and gamma.'''
     # Constructing the Ising and mixing Hamiltonians
     H_zz = sum([-m.J_rescaled[i,j]*Z(i,m.n) @ Z(j,m.n) for i in range(m.n) for j in range(i+1,m.n)]) # note that the factor 1/2 is not needed here
@@ -167,8 +166,8 @@ def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time
     H_x = sum([X(i,m.n) for i in range(m.n)])
 
     gamma_range = np.linspace(gamma_lims[0], gamma_lims[1], gamma_steps)
-    t_min = time_range[0]
-    t_max = time_range[1]
+    t_min = time_lims[0]
+    t_max = time_lims[1]
 
     d = 2**m.n
     proposal_mat_arr = []
@@ -200,7 +199,7 @@ def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time
     assert is_stochastic(proposal_mat), 'Proposal matrix is not stochastic.'
     return proposal_mat
 
-def get_proposal_mat_quantum_layden(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time_range=(2,20)):
+def get_proposal_mat_quantum_layden(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time_lims=(2,20)):
     '''
     Returns a 2**n * 2**n stochastic proposal matrix for our quantum method of suggesting moves,
     with no Trotter, gate or SPAM errors.
@@ -210,7 +209,7 @@ def get_proposal_mat_quantum_layden(m, gamma_lims=(0.25, 0.6), gamma_steps=20, t
     This function is optimized and is significantly faster than <get_proposal_mat_quantum_avg>.
     ''' 
     def cont_eig(Dlambda):
-        t_0, t_f = time_range[0], time_range[1] # evolution time t ~ unif(t_0, t_f)
+        t_0, t_f = time_lims[0], time_lims[1] # evolution time t ~ unif(t_0, t_f)
         x = np.sin(Dlambda*t_f) - np.sin(Dlambda*t_0) # from analytical expression for transition probabilities
         return np.divide(2*x/(t_f-t_0), Dlambda, out=np.ones_like(Dlambda), where=(Dlambda!=0) ) 
     
