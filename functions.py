@@ -12,7 +12,11 @@ import seaborn as sns
 # Useful stuff
 import time
 import pickle
-import tqdm
+from tqdm import tqdm
+import joblib
+
+# substitute with your path
+projectdir = 'C:/Users/ivash/projects/qmcmc/quantum-mcmc/'
 
 # Conversion funtions
 def int_to_bin(i, n):
@@ -152,25 +156,27 @@ def get_basis_state(i,n):
     psi[i] = 1
     return psi
 
+def get_mixing_hamiltonian(n):
+    '''Simple sparse mixing Hamiltonian.'''
+    return sum([X(i,n) for i in range(n)])
+
+# Precompute mixing Hamiltonians 
+H_mixer_list = [get_mixing_hamiltonian(n) for n in range(1,11)]
+
 def get_proposal_mat_quantum(m, gamma=0.7, t=1):
     '''Get a quantum proposal matrix for a given Ising model.'''
-    H_zz = sum([-m.J_rescaled[i,j]*Z(i,m.n) @ Z(j,m.n) for i in range(m.n) for j in range(i+1,m.n)]) # note that the factor 1/2 is not needed here
-    H_z = sum([-m.h_rescaled[i]*Z(i,m.n) for i in range(m.n)])
-    H_x = sum([X(i,m.n) for i in range(m.n)])
-    
-    H = (1-gamma) *(H_zz + H_z) + gamma*H_x
+    H_ising = np.diag(m.E_rescaled)
+    H_mixer = H_mixer_list[m.n-1]
+    H = (1-gamma)*H_ising + gamma*H_mixer
     U = sparse_la.expm(-1j * H * t) # time evoluiton operator
     proposal_mat = np.abs(U)**2
-
-    assert is_stochastic(proposal_mat), 'Proposal matrix is not stochastic.'
     return proposal_mat
 
 def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time_lims=(2,20)):
     '''Get a quantum proposal matrix for a given Ising model averaged over time and gamma.'''
     # Constructing the Ising and mixing Hamiltonians
-    H_zz = sum([-m.J_rescaled[i,j]*Z(i,m.n) @ Z(j,m.n) for i in range(m.n) for j in range(i+1,m.n)]) # note that the factor 1/2 is not needed here
-    H_z = sum([-m.h_rescaled[i]*Z(i,m.n) for i in range(m.n)])
-    H_x = sum([X(i,m.n) for i in range(m.n)])
+    H_ising = np.diag(m.E_rescaled)
+    H_mixer = H_mixer_list[m.n-1]
 
     gamma_range = np.linspace(gamma_lims[0], gamma_lims[1], gamma_steps)
     t_min = time_lims[0]
@@ -179,7 +185,7 @@ def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time
     d = 2**m.n
     proposal_mat_arr = []
     for gamma in gamma_range:
-        H = (1-gamma) *(H_zz + H_z) + gamma*H_x
+        H = (1-gamma)*H_ising + gamma*H_mixer
         vals, vecs = la.eigh(H)
 
         # Construct transition weight matrix for to time averaging (analytical expression)
@@ -249,10 +255,13 @@ def get_proposal_mat_quantum_layden(m, gamma_lims=(0.25, 0.6), gamma_steps=20, t
 def is_stochastic(P):
     '''Checks if matrix P is left stochastic, i.e., columns add up to one.'''
     col_sums = np.sum(P, axis=0)
-    return np.all(P >= 0) and np.allclose(col_sums, 1)
+    return np.all(P >= -1e-8) and np.allclose(col_sums, 1)
 
-def get_transition_matrix(m, T, proposal_mat):
-    '''Generate a MC transition probability matrix using Metropolis-Hastings algorithm.'''
+def get_transition_matrix_old_version(m, T, proposal_mat):
+    '''
+    Generate a MC transition probability matrix using Metropolis-Hastings algorithm. 
+    This is the first version of this function. Use <get_transition_matrix> for better performance.
+    '''
     d = 2**m.n
     P = np.zeros((d,d))
     for i in range(d):
@@ -265,6 +274,19 @@ def get_transition_matrix(m, T, proposal_mat):
     for i in range(d):
         P[i,i] = 1 - sum(P[:,i]) # sum for j == i for normalization
     assert is_stochastic(P), 'Something went wrong: P is not stochastic.'
+    return P
+
+def get_transition_matrix(m, T, proposal_mat):
+    '''Generate a MC transition probability matrix using Metropolis-Hastings algorithm.'''
+    d = 2**m.n
+    E_tiled = np.tile(m.E, (d,1))
+    dE = E_tiled.T - E_tiled # dE[new,old] = E_new - E_old
+    A = np.exp(-dE / T, where=(dE > 0), out=np.ones_like(dE)) # only compute the exponential if dE > 0 to avoid overflows
+    P = A * proposal_mat # MH step
+
+    np.fill_diagonal(P, 0)
+    diag = np.ones(2**m.n) - np.sum(P, axis=0) # sum for normalization
+    P = P + np.diag(diag)
     return P
 
 def get_delta(P):
