@@ -61,7 +61,7 @@ class IsingModel:
         assert np.allclose(J.T, J), 'J must be symmetric.'
         assert np.all(np.diag(J) == 0), 'Diagonal elements of J must be zero.'
 
-        self.alpha = np.sqrt(self.n / (la.norm(J, ord='fro')**2 + la.norm(h, ord=2)**2))
+        self.alpha = np.sqrt(self.n / (0.5*la.norm(J, ord='fro')**2 + la.norm(h, ord=2)**2))
         self.J_rescaled = self.J * self.alpha 
         self.h_rescaled = self.h * self.alpha
 
@@ -178,9 +178,12 @@ def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time
     H_ising = np.diag(m.E_rescaled)
     H_mixer = H_mixer_list[m.n-1]
 
-    gamma_range = np.linspace(gamma_lims[0], gamma_lims[1], gamma_steps)
     t_min = time_lims[0]
     t_max = time_lims[1]
+
+    # approximate integral over gamma by Riemann sum with gamma_steps (D. Layden et al [Nature 619, 282–287 (2023)])
+    gamma_starts, step_size = np.linspace(gamma_lims[0], gamma_lims[1], num=gamma_steps, endpoint=False, retstep=True)
+    gamma_range = gamma_starts + step_size/2
 
     d = 2**m.n
     proposal_mat_arr = []
@@ -197,7 +200,7 @@ def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time
                     transition_weight_mat[i,j] = (np.sin(dlambda*t_max) - np.sin(dlambda*t_min) ) / (dlambda * (t_max-t_min))
                 else: transition_weight_mat[i,j] = 1
         transition_weight_mat = transition_weight_mat + transition_weight_mat.T + np.eye(d)
-        # Constructing the time-averaged proposal matrix
+        # Construct the time-averaged proposal matrix
         Q = np.zeros((d,d))
         for i in range(d):
             for j in range(i,d):
@@ -219,29 +222,30 @@ def get_proposal_mat_quantum_layden(m, gamma_lims=(0.25, 0.6), gamma_steps=20, t
 
     Taken from D. Layden et al [Nature 619, 282–287 (2023)].
 
-    This function is optimized and is significantly faster than <get_proposal_mat_quantum_avg>.
+    This function is optimized and is significantly faster than my <get_proposal_mat_quantum_avg>.
     ''' 
     def cont_eig(Dlambda):
         t_0, t_f = time_lims[0], time_lims[1] # evolution time t ~ unif(t_0, t_f)
         x = np.sin(Dlambda*t_f) - np.sin(Dlambda*t_0) # from analytical expression for transition probabilities
-        return np.divide(2*x/(t_f-t_0), Dlambda, out=np.ones_like(Dlambda), where=(Dlambda!=0) ) 
+        return np.divide(2*x/(t_f-t_0), Dlambda, out=np.ones_like(Dlambda), where=(Dlambda!=0) )
     
     n = m.n 
 
-    H_zz = sum([-m.J_rescaled[i,j]*Z(i,m.n) @ Z(j,m.n) for i in range(m.n) for j in range(i+1,m.n)]) # note that the factor 1/2 is not needed here
-    H_z = H_zz + sum([-m.h_rescaled[i]*Z(i,m.n) for i in range(m.n)])
-    H_x = sum([X(i,n) for i in range(n)])
+    H_ising = np.diag(m.E_rescaled)
+    H_mixer = H_mixer_list[m.n-1]
 
     d = 2**n
     a = np.arange(d**2)
     mask = (a//d >= a%d)
     ones = np.ones(d)
 
-    gamma_range = np.linspace(gamma_lims[0], gamma_lims[1], gamma_steps)
+    # approximate integral over gamma by Riemann sum with gamma_steps (D. Layden et al [Nature 619, 282–287 (2023)])
+    gamma_starts, step_size = np.linspace(gamma_lims[0], gamma_lims[1], num=gamma_steps, endpoint=False, retstep=True)
+    gamma_range = gamma_starts + step_size/2
 
     prop_list = []
     for gamma in gamma_range:
-        H = (1-gamma)*H_z + gamma*H_x
+        H = (1-gamma)*H_ising + gamma*H_mixer
         vals, vecs = la.eigh(H)
         vals_diff = (np.kron(vals, ones) - np.kron(ones, vals))[mask]
         M = la.khatri_rao(vecs.T, vecs.T)[mask]
@@ -281,11 +285,14 @@ def get_transition_matrix(m, T, proposal_mat):
     d = 2**m.n
     E_tiled = np.tile(m.E, (d,1))
     dE = E_tiled.T - E_tiled # dE[new,old] = E_new - E_old
-    A = np.exp(-dE / T, where=(dE > 0), out=np.ones_like(dE)) # only compute the exponential if dE > 0 to avoid overflows
+    if T != 0:
+        A = np.exp(-dE / T, where=(dE > 0), out=np.ones_like(dE)) # only compute the exponential if dE > 0 to avoid overflows
+    else: 
+        A = np.where(dE > 0, 0., 1.) # reject all energy-increasing steps
     P = A * proposal_mat # MH step
 
     np.fill_diagonal(P, 0)
-    diag = np.ones(2**m.n) - np.sum(P, axis=0) # sum for normalization
+    diag = np.ones(d) - np.sum(P, axis=0)
     P = P + np.diag(diag)
     return P
 
