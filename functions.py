@@ -69,14 +69,28 @@ class IsingModel:
         for i in range(2**self.n):
             s = int_to_spin(i, self.n)
             self.E[i] = -0.5*(s @ self.J @ s) - s @ self.h
+        self.gs = np.argmin(self.E)
         self.E_rescaled = self.E.copy() * self.alpha
+
+    def __str__(self):
+        info = f"Ising model information:\n"
+        info += f"Number of spins: {self.n}\n"
+        info += f"External fields (h): {self.h}\n"
+        info += f"Interaction matrix (J):\n{self.J}\n"
+        info += f"Alpha: {self.alpha}\n"
+        info += f"Ground state energy: {min(self.E)}\n"
+        info += f"Ground state: |{self.gs}> = |{int_to_bin(self.gs, self.n)}>\n"
+        return info
 
 class RandomIsingModel(IsingModel):
     '''
     Represents a randomly generated Ising model with a given number of qubits.
     '''
-    def __init__(self, n):
-        h = generate_random_h(n)
+    def __init__(self, n, local_fields=True):
+        if local_fields:
+            h = generate_random_h(n)
+        else: 
+            h = np.zeros(n)
         J = generate_random_J(n)
         super().__init__(J, h)
 
