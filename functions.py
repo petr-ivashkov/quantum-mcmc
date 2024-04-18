@@ -69,7 +69,8 @@ class IsingModel:
         for i in range(2**self.n):
             s = int_to_spin(i, self.n)
             self.E[i] = -0.5*(s @ self.J @ s) - s @ self.h
-        self.gs = np.argmin(self.E)
+        self.gs = int_to_bin(np.argmin(self.E), self.n)
+        self.gs_deg = np.count_nonzero(np.isclose(self.E, min(self.E)))
         self.E_rescaled = self.E.copy() * self.alpha
 
     def __str__(self):
@@ -79,7 +80,8 @@ class IsingModel:
         info += f"Interaction matrix (J):\n{self.J}\n"
         info += f"Alpha: {self.alpha}\n"
         info += f"Ground state energy: {min(self.E)}\n"
-        info += f"Ground state: |{self.gs}> = |{int_to_bin(self.gs, self.n)}>\n"
+        info += f"Ground state: |{self.gs}> = |{bin_to_int(self.gs)}>\n"
+        info += f"Ground state degeneracy: {self.gs_deg}\n"
         return info
 
 class RandomIsingModel(IsingModel):
