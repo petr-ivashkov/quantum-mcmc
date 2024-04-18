@@ -15,6 +15,19 @@ import pickle
 from tqdm import tqdm
 import joblib
 
+# Colors 
+blue = '#0000BF'
+red = '#B22222'
+light_grey = '#e5e5e5e5'
+grey = '#A9A9A9'
+dark_grey = '#555555'
+white = '#FFFFFF'
+black = '#000000'
+
+# Golden ratio
+figure_size_x = 6.0462
+figure_size_y = figure_size_x/1.618
+
 # substitute with your path
 projectdir = 'C:/Users/ivash/projects/qmcmc/quantum-mcmc/'
 
@@ -88,12 +101,12 @@ class RandomIsingModel(IsingModel):
     '''
     Represents a randomly generated Ising model with a given number of qubits.
     '''
-    def __init__(self, n, local_fields=True):
+    def __init__(self, n, local_fields=True, seed=None):
         if local_fields:
-            h = generate_random_h(n)
+            h = generate_random_h(n, seed=seed)
         else: 
             h = np.zeros(n)
-        J = generate_random_J(n)
+        J = generate_random_J(n, seed=seed)
         super().__init__(J, h)
 
 # Useful quantum definitions - taken from D. Layden et al [Nature 619, 282–287 (2023)] 
@@ -126,14 +139,16 @@ def Z(i, n):
     return my_kron(Z_list)
 
 # Functions to generate a random instance 
-def generate_random_J(n):
+def generate_random_J(n, seed=None):
     '''Generate a random symmetric coupling matrix for n sites, sampled from N(0,1).'''
+    np.random.seed(seed)
     J = np.triu(np.random.standard_normal((n,n)), k=1) # No self-interactions
     J = J + J.T # Ensure symmetry
     return J
 
-def generate_random_h(n):
+def generate_random_h(n, seed=None):
     '''Generate random external fields for n sites, sampled from N(0,1).'''
+    np.random.seed(seed) 
     return np.random.standard_normal(n)
 
 # Functions for generating a classical proposal
