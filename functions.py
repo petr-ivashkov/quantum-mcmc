@@ -363,7 +363,7 @@ def samples_to_counts(samples, dtype='str'):
     return counts
 
 # Other useful functions
-def display_video(video, fps=30):
+def display_video(video, fps=30, cmap='coolwarm'):
     """
     Display a 3D numpy array as a video in a Jupyter notebook.
 
@@ -373,7 +373,10 @@ def display_video(video, fps=30):
     """
     n_frames = video.shape[0]
     fig, ax = plt.subplots()
-    img = ax.imshow(video[0,:,:], interpolation='nearest', origin='lower')
+    img = ax.imshow(video[0,:,:], 
+                    interpolation='nearest', 
+                    origin='lower',
+                    cmap=cmap)
     for i in range(n_frames):
         frame = video[i,:,:]
         img.set_data(frame)
