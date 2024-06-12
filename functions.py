@@ -3,6 +3,8 @@ import numpy as np
 import scipy
 import scipy.linalg as la
 import scipy.sparse.linalg as sparse_la
+from scipy.integrate import solve_ivp
+from scipy.optimize import minimize
 
 # Plotting and output
 from IPython.display import display, clear_output
@@ -35,6 +37,10 @@ projectdir = 'C:/Users/ivash/projects/qmcmc/quantum-mcmc/'
 def int_to_bin(i, n):
     '''Convert a given integer to a bitstring of fixed length using 0 -> 0..00 convention.'''
     return bin(i)[2:].zfill(n)
+
+def int_to_bin_arr(i, n):
+    '''Convert a given integer to a bitstring of fixed length using 0 -> 0..00 convention.'''
+    return np.array([int(b) for b in int_to_bin(i, n)])
 
 def bin_to_int(s):
     '''Convert a given bitstring to an integer.'''
