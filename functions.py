@@ -5,6 +5,7 @@ import scipy.linalg as la
 import scipy.sparse.linalg as sparse_la
 from scipy.integrate import solve_ivp
 from scipy.optimize import minimize
+from scipy.interpolate import interp1d
 
 # Plotting and output
 from IPython.display import display, clear_output
@@ -13,6 +14,7 @@ import seaborn as sns
 
 # Useful stuff
 import time
+import json
 import pickle
 from tqdm import tqdm
 import joblib
@@ -368,7 +370,108 @@ def samples_to_counts(samples, dtype='str'):
             else: counts[bin_to_int(sample)] = 1  
     return counts
 
-# Other useful functions
+# TDSE solvers
+def state_tdse(t, psi, hamiltonian):
+    '''
+    Computes the time derivative of the state vector psi 
+    according to the time-dependent Schrödinger equation.
+    '''
+    return -1j * hamiltonian(t) @ psi
+
+def operator_tdse(t, U, hamiltonian):
+    '''
+    Computes the time derivative of the unitary operator U 
+    according to the time-dependent Schrödinger equation.
+    '''
+    return -1j * hamiltonian(t) @ U
+
+def solve_state_tdse(hamiltonian, t_max, psi_0, return_intermediate=False, t_eval=None, method='RK45', rtol=1e-10):
+    '''
+    Solves the time-dependent Schrödinger equation for the 
+    state vector psi over the interval [0, t_max].
+    '''
+    sol = solve_ivp(state_tdse,
+                    [0, t_max],
+                    y0=psi_0,
+                    method=method,
+                    t_eval=t_eval,
+                    rtol=rtol,
+                    args=(hamiltonian,) # args for state_tdse()
+                    )
+    psi_t = sol.y.T # shape of sol.y is d x n_val_points
+    if return_intermediate:
+        return psi_t
+    else: 
+        return psi_t[-1]
+    
+def solve_operator_tdse(hamiltonian, t_max, return_intermediate=False, t_eval=None, method='RK45', rtol=1e-10):
+    '''
+    Solves the time-dependent Schrödinger equation for a 
+    unitary operator over the interval [0, t_max].
+    '''
+    def flattened_operator_tdse(t, U_flat, hamiltonian):
+        # Returns a flattened U for solving TDSE using solve_ivp()
+        return operator_tdse(t, U_flat.reshape(d, d), hamiltonian).flatten()
+    
+    d = len(hamiltonian(0))
+    U0 = np.eye(d, dtype=complex).flatten()
+    sol = solve_ivp(flattened_operator_tdse,
+                    [0, t_max],
+                    y0=U0,
+                    method=method,
+                    t_eval=t_eval,
+                    rtol=rtol,
+                    args=(hamiltonian,) # args for operator_tdse()
+                    )
+    U_t = sol.y.T.reshape((-1,d,d)) # shape of sol.y is (d x d) x n_val_points
+    if return_intermediate:
+        return U_t
+    else: 
+        return U_t[-1]
+
+
+# Annealing related functions
+def get_symmetric_schedule(ramp_up_schedule):
+    '''Mirror and concatenate the given ramp up schedule to create a symmetric schedule.'''
+    return np.concatenate([ramp_up_schedule, ramp_up_schedule[::-1][1:]])
+
+def get_proposal_mat_ra(m, schedule_interpolator, t_max, assert_symmetry=True):
+    '''
+    Computes the proposal matrix using the given schedule function 
+    for the reverse annealing process with the total annealing time t_max.
+
+    - schedule() should be a symmetric function on the interval [0,1].
+    '''
+    H_ising = np.diag(m.E_rescaled)
+    H_mixer = H_mixer_list[m.n-1]
+    def s(t): return t/t_max # annealing fraction
+    def hamiltonian(t): return (1-schedule_interpolator(s(t)))*H_ising + schedule_interpolator(s(t))*H_mixer
+    U_t = solve_operator_tdse(hamiltonian, t_max)
+    if assert_symmetry: 
+         assert np.allclose(U_t, U_t.T), 'Proposal matrix is not symmetric.'
+    return np.abs(U_t)**2
+
+def get_schedule_interpolator(schedule, kind='linear'):
+    '''Creates an interpolating function based on the schedule.'''
+    n_points = len(schedule)
+    s = np.linspace(0,1,n_points)
+    return interp1d(s, schedule, kind=kind)
+
+# Plotting functions
+def plot_schedule(schedule, schedule_interpolator = None):
+    '''Plots annealing schedule with optional interpolation.'''
+    n_points = len(schedule)
+    if schedule_interpolator is None:
+        plt.plot(np.linspace(0,1,n_points), schedule, '.--', color = red)
+    else:
+        x_cont = np.linspace(0,1,100)
+        plt.plot(x_cont, schedule_interpolator(x_cont), '--', color = grey)
+        plt.plot(np.linspace(0,1,n_points), schedule, '.', color = red)
+    plt.xlabel('s')
+    plt.ylabel('$\gamma(s)$')
+    plt.title('$H(\gamma) = \gamma H_{prob} + (1-\gamma) H_{mix}$')
+    plt.show()
+
 def display_video(video, fps=30, cmap='coolwarm'):
     """
     Display a 3D numpy array as a video in a Jupyter notebook.
@@ -391,3 +494,12 @@ def display_video(video, fps=30, cmap='coolwarm'):
         time.sleep(1 / fps)
     plt.close(fig)
 
+# Other useful functions
+def save_in_json(data, file_path):
+    '''Save the dictionary as a JSON file.'''
+    with open(file_path, 'w') as json_file:
+        json.dump(data, json_file, indent=4)
+    # Check if writing was successful
+    with open(file_path, 'r') as json_file:
+        data_loaded = json.load(json_file)
+    assert data_loaded == data, 'An error occured when saving JSON.'
