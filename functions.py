@@ -60,6 +60,12 @@ def int_to_spin(i, n):
     b = int_to_bin(i, n)
     return bin_to_spin(b)
 
+def get_computational_basis_state(i, n):
+    '''Return the i-th computational basis state vector of dimension 2^n.'''
+    state = np.zeros(2**n, dtype=complex)
+    state[i] = 1
+    return state
+
 # Problem instance
 class IsingModel:
     '''
