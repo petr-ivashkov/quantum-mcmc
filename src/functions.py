@@ -440,8 +440,13 @@ def solve_operator_tdse(hamiltonian, t_max, return_intermediate=False, t_eval=No
 
 
 # Annealing related functions
-def get_symmetric_schedule(ramp_up_schedule):
+
+RAMP_UP_TIME_FRACTION = 0.05
+
+def get_symmetric_schedule(ramp_up_schedule, start_at_zero=True):
     '''Mirror and concatenate the given ramp up schedule to create a symmetric schedule.'''
+    if start_at_zero:
+        ramp_up_schedule = np.concatenate(([0], ramp_up_schedule))
     return np.concatenate([ramp_up_schedule, ramp_up_schedule[::-1][1:]])
 
 def get_proposal_mat_ra(m, schedule_interpolator, t_max, assert_symmetry=True):
@@ -463,6 +468,8 @@ def get_proposal_mat_ra(m, schedule_interpolator, t_max, assert_symmetry=True):
 def get_schedule_interpolator(schedule, kind='linear'):
     '''Creates an interpolating function based on the schedule.'''
     n_points = len(schedule)
+    # s = np.linspace(RAMP_UP_TIME_FRACTION,1-RAMP_UP_TIME_FRACTION, n_points-2)
+    # s = np.concatenate(([0],s,[1]))
     s = np.linspace(0,1,n_points)
     return interp1d(s, schedule, kind=kind)
 
@@ -470,12 +477,14 @@ def get_schedule_interpolator(schedule, kind='linear'):
 def plot_schedule(schedule, schedule_interpolator = None):
     '''Plots annealing schedule with optional interpolation.'''
     n_points = len(schedule)
+    # s = np.concatenate(([0],np.linspace(RAMP_UP_TIME_FRACTION,1-RAMP_UP_TIME_FRACTION, n_points-2),[1]))
+    s = np.linspace(0,1,n_points)
     if schedule_interpolator is None:
-        plt.plot(np.linspace(0,1,n_points), schedule, '.--', color = red)
+        plt.plot(s, schedule, '.--', color = red)
     else:
         x_cont = np.linspace(0,1,100)
         plt.plot(x_cont, schedule_interpolator(x_cont), '--', color = grey)
-        plt.plot(np.linspace(0,1,n_points), schedule, '.', color = red)
+        plt.plot(s, schedule, '.', color = red)
     plt.xlabel('s')
     plt.ylabel('$\gamma(s)$')
     plt.title('$H(\gamma) = (1-\gamma) H_{prob} + \gamma H_{mix}$')

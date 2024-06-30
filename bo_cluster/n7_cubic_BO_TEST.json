@@ -1,0 +1,20 @@
+{
+    "n": 7,
+    "T": 0.5,
+    "interpolator_kind": "cubic",
+    "t_max": 10,
+    "schedule_opt": [
+        0.0,
+        0.16837538860797646,
+        0.5290919881800383,
+        0.9828101141236952,
+        0.5290919881800383,
+        0.16837538860797646,
+        0.0
+    ],
+    "loss_opt": 0.08841683198245665,
+    "first_optimizer": "BO",
+    "second_optimizer": "None",
+    "n_random_models": 10,
+    "n_iter": 500
+}
