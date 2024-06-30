@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --time=04:00:00
+#SBATCH --cpus-per-task=24
+#SBATCH --time=10:00:00
 #SBATCH --job-name="bo_cluster_TEST"
 #SBATCH --mem-per-cpu=1024
 
