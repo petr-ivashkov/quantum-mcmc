@@ -31,6 +31,27 @@ dark_grey = '#555555'
 white = '#FFFFFF'
 black = '#000000'
 
+plt.rcParams.update(
+    {
+        "xtick.direction": "in",
+        "ytick.direction": "out",
+        "ytick.right": False,
+        "xtick.top": False,
+        "ytick.left": True,
+        "xtick.bottom": False,
+        "figure.facecolor": "1",
+        "savefig.facecolor": "1",
+        "savefig.dpi": 600,
+        "figure.dpi": 600,
+        "savefig.bbox": "tight",
+        "font.size": 7,
+        "font.family": "serif",
+        "lines.markersize": 6,
+        "lines.linewidth": 1,
+        'axes.axisbelow' : True
+    }
+)
+
 # Golden ratio
 figure_size_x = 6.0462
 figure_size_y = figure_size_x/1.618
