@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=48
+#SBATCH --cpus-per-task=24
 #SBATCH --time=08:00:00
 #SBATCH --job-name="binder_cumulant"
 #SBATCH --mem-per-cpu=1024
@@ -29,8 +29,8 @@ conda activate qmcmc
 # papermill ./binder_cumulant/binder_cumulant_quantum_SK_n4.ipynb ./binder_cumulant/binder_cumulant_quantum_SK_n4.ipynb
 # papermill ./binder_cumulant/binder_cumulant_quantum_SK_n5.ipynb ./binder_cumulant/binder_cumulant_quantum_SK_n5.ipynb
 # papermill ./binder_cumulant/binder_cumulant_quantum_SK_n6.ipynb ./binder_cumulant/binder_cumulant_quantum_SK_n6.ipynb
-papermill ./binder_cumulant/binder_cumulant_quantum_SK_n7.ipynb ./binder_cumulant/binder_cumulant_quantum_SK_n7.ipynb
+# papermill ./binder_cumulant/binder_cumulant_quantum_SK_n7.ipynb ./binder_cumulant/binder_cumulant_quantum_SK_n7.ipynb
 papermill ./binder_cumulant/binder_cumulant_quantum_SK_n8.ipynb ./binder_cumulant/binder_cumulant_quantum_SK_n8.ipynb
-papermill ./binder_cumulant/binder_cumulant_quantum_SK_n9.ipynb ./binder_cumulant/binder_cumulant_quantum_SK_n9.ipynb
+# papermill ./binder_cumulant/binder_cumulant_quantum_SK_n9.ipynb ./binder_cumulant/binder_cumulant_quantum_SK_n9.ipynb
 
 conda deactivate
