@@ -1,10 +1,10 @@
 #!/bin/bash
 
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=18
-#SBATCH --time=20:00:00
-#SBATCH --job-name="bo_cluster"
-#SBATCH --mem-per-cpu=1024
+#SBATCH --cpus-per-task=3
+#SBATCH --time=04:00:00
+#SBATCH --job-name="fixed_gamma"
+#SBATCH --mem-per-cpu=5120
 
 export OMP_NUM_THREADS=48;
 
@@ -17,7 +17,7 @@ conda activate qmcmc
 # papermill ./bo_cluster/reverse_annealing_bo_n6.ipynb ./bo_cluster/reverse_annealing_bo_n6.ipynb
 # papermill ./bo_cluster/reverse_annealing_bo_n7.ipynb ./bo_cluster/reverse_annealing_bo_n7.ipynb
 # papermill ./bo_cluster/reverse_annealing_bo_n8.ipynb ./bo_cluster/reverse_annealing_bo_n8.ipynb
-papermill ./bo_cluster/reverse_annealing_bo_n9.ipynb ./bo_cluster/reverse_annealing_bo_n9.ipynb
+# papermill ./bo_cluster/reverse_annealing_bo_n9.ipynb ./bo_cluster/reverse_annealing_bo_n9.ipynb
 # papermill ./bo_cluster/reverse_annealing_bo_n10.ipynb ./bo_cluster/reverse_annealing_bo_n10.ipynb
 
 # papermill ./phase_transition/phase_diagram_quantum_SK_n4.ipynb ./phase_transition/phase_diagram_quantum_SK_n4.ipynb
@@ -39,6 +39,6 @@ papermill ./bo_cluster/reverse_annealing_bo_n9.ipynb ./bo_cluster/reverse_anneal
 # papermill ./scale_factors/scale_factors_random.ipynb ./scale_factors/scale_factors_random.ipynb
 # papermill ./scale_factors/scale_factors_local.ipynb ./scale_factors/scale_factors_local.ipynb
 # papermill ./scale_factors/scale_factors_quantum.ipynb ./scale_factors/scale_factors_quantum.ipynb
-# papermill ./scale_factors/scale_factors_fixed_gamma.ipynb ./scale_factors/scale_factors_fixed_gamma.ipynb
+papermill ./scale_factors/scale_factors_fixed_gamma.ipynb ./scale_factors/scale_factors_fixed_gamma.ipynb
 
 conda deactivate
