@@ -1,10 +1,10 @@
 #!/bin/bash
 
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=3
+#SBATCH --cpus-per-task=12
 #SBATCH --time=04:00:00
-#SBATCH --job-name="fixed_gamma"
-#SBATCH --mem-per-cpu=5120
+#SBATCH --job-name="ra"
+#SBATCH --mem-per-cpu=4096
 
 export OMP_NUM_THREADS=48;
 
@@ -39,6 +39,8 @@ conda activate qmcmc
 # papermill ./scale_factors/scale_factors_random.ipynb ./scale_factors/scale_factors_random.ipynb
 # papermill ./scale_factors/scale_factors_local.ipynb ./scale_factors/scale_factors_local.ipynb
 # papermill ./scale_factors/scale_factors_quantum.ipynb ./scale_factors/scale_factors_quantum.ipynb
-papermill ./scale_factors/scale_factors_fixed_gamma.ipynb ./scale_factors/scale_factors_fixed_gamma.ipynb
+# papermill ./scale_factors/scale_factors_fixed_gamma.ipynb ./scale_factors/scale_factors_fixed_gamma.ipynb
+papermill ./scale_factors/scale_factors_ra.ipynb ./scale_factors/scale_factors_ra.ipynb
+
 
 conda deactivate
