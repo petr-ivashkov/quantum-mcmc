@@ -1,16 +1,12 @@
 #!/bin/bash
 
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=12
-#SBATCH --time=04:00:00
-#SBATCH --job-name="ra"
-#SBATCH --mem-per-cpu=4096
+#SBATCH --cpus-per-task=48
+#SBATCH --time=12:00:00
+#SBATCH --job-name="time"
+#SBATCH --mem-per-cpu=2056
 
 export OMP_NUM_THREADS=48;
-
-source $HOME/miniconda/bin/activate
-
-conda activate qmcmc
 
 # papermill ./bo_cluster/reverse_annealing_bo_n4.ipynb ./bo_cluster/reverse_annealing_bo_n4.ipynb
 # papermill ./bo_cluster/reverse_annealing_bo_n5.ipynb ./bo_cluster/reverse_annealing_bo_n5.ipynb
@@ -40,7 +36,5 @@ conda activate qmcmc
 # papermill ./scale_factors/scale_factors_local.ipynb ./scale_factors/scale_factors_local.ipynb
 # papermill ./scale_factors/scale_factors_quantum.ipynb ./scale_factors/scale_factors_quantum.ipynb
 # papermill ./scale_factors/scale_factors_fixed_gamma.ipynb ./scale_factors/scale_factors_fixed_gamma.ipynb
-papermill ./scale_factors/scale_factors_ra.ipynb ./scale_factors/scale_factors_ra.ipynb
-
-
-conda deactivate
+# papermill ./scale_factors/scale_factors_ra.ipynb ./scale_factors/scale_factors_ra.ipynb
+papermill ./time_dependency/optimal_t_vs_n.ipynb ./time_dependency/optimal_t_vs_n.ipynb
