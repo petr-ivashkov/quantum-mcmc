@@ -133,6 +133,7 @@ class IsingModel:
         info += f"Ground state energy: {min(self.E)}\n"
         info += f"Ground state: |{self.gs}> = |{bin_to_int(self.gs)}>\n"
         info += f"Ground state degeneracy: {self.gs_deg}\n"
+        info += f"Energy spectrum: {self.E}\n"
         return info
 
 class RandomIsingModel(IsingModel):
@@ -186,6 +187,8 @@ def generate_random_J(n, seed=None):
 
 def generate_random_h(n, seed=None):
     '''Generate random external fields for n sites, sampled from N(0,1).'''
+    if seed is not None:
+        seed += int((n+1)*n/2)
     np.random.seed(seed) 
     return np.random.standard_normal(n)
 
