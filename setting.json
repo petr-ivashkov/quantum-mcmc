@@ -1,0 +1,6 @@
+{
+    "T": 1,
+    "gamma": 0.45,
+    "t": 12,
+    "num_random_models": 100
+}

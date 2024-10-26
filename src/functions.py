@@ -124,6 +124,30 @@ class IsingModel:
         self.gs_deg = np.count_nonzero(np.isclose(self.E, min(self.E)))
         self.E_rescaled = self.E.copy() * self.alpha
 
+    @classmethod
+    def from_coefficients(cls, n, coefficients):
+        '''
+        Instantiates an Ising model from an array of coefficients.
+        
+        Parameters:
+        - coefficients (numpy.ndarray): 1D array of n + n(n-1)/2 coefficients, where the first n elements
+                                        correspond to h (external fields) and the remaining correspond to
+                                        the upper triangular elements of the symmetric interaction matrix J.
+        '''
+        #  Check that the length of the coefficients array is consistent
+        assert len(coefficients) == n+(n*(n-1))//2, \
+            f"Expected {expected_length} coefficients, but got {len(coefficients)}."
+
+        h = np.asarray(coefficients[:n])
+        J_upper_tri = coefficients[n:]
+        J = np.zeros((n, n))
+
+        # Fill the upper triangular part of J with the interaction coefficients
+        upper_tri_indices = np.triu_indices(n, k=1)
+        J[upper_tri_indices] = J_upper_tri
+        J += J.T
+        return cls(J, h)
+
     def __str__(self):
         info = f"Ising model information:\n"
         info += f"Number of spins: {self.n}\n"
@@ -244,7 +268,7 @@ def get_proposal_mat_quantum(m, gamma=0.7, t=1):
     proposal_mat = np.abs(U)**2
     return proposal_mat
 
-def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time_lims=(2,20)):
+def get_proposal_mat_quantum_avg(m, gamma_lims=(0.25, 0.6), gamma_steps=20, time_lims=(2,12)):
     '''Get a quantum proposal matrix for a given Ising model averaged over time and gamma.'''
     # Constructing the Ising and mixing Hamiltonians
     H_ising = np.diag(m.E_rescaled)
@@ -539,15 +563,15 @@ def display_video(video, fps=30, cmap='coolwarm'):
 # Other useful functions
 def save_in_json(data, file_path):
     '''Save the dictionary as a JSON file.'''
-    with open(file_path, 'w') as json_file:
+    with open(projectdir+file_path, 'w') as json_file:
         json.dump(data, json_file, indent=4)
     # Check if writing was successful
-    with open(file_path, 'r') as json_file:
+    with open(projectdir+file_path, 'r') as json_file:
         data_loaded = json.load(json_file)
     assert data_loaded == data, 'An error occured when saving JSON.'
 
 def load_from_json(file_path):
     '''Load data from a JSON file and return it as a dictionary.'''
-    with open(file_path, 'r') as json_file:
+    with open(projectdir+file_path, 'r') as json_file:
         data = json.load(json_file)
     return data
