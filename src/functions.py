@@ -136,7 +136,7 @@ class IsingModel:
         '''
         #  Check that the length of the coefficients array is consistent
         assert len(coefficients) == n+(n*(n-1))//2, \
-            f"Expected {expected_length} coefficients, but got {len(coefficients)}."
+            f"Expected {n+(n*(n-1))//2} coefficients, but got {len(coefficients)}."
 
         h = np.asarray(coefficients[:n])
         J_upper_tri = coefficients[n:]
