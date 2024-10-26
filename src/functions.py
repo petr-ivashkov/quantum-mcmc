@@ -521,6 +521,44 @@ def get_schedule_interpolator(schedule, kind='linear'):
     s = np.linspace(0,1,n_points)
     return interp1d(s, schedule, kind=kind)
 
+# Order parameters for quantum SK model
+def magnetization(H, T):
+    d = len(H)
+    n = int(np.log2(d))
+    mag_basis = np.zeros(d)
+    for i in range(d):
+        s = int_to_bin(i, n)
+        mag_basis[i] = (s.count('0') - s.count('1')) / n
+    E, vecs = la.eigh(H)
+    if T == 0:
+        boltzmann_factors = np.array(E == min(E), dtype=int) / sum(np.array(E == min(E), dtype=int))
+    else:
+        boltzmann_factors = scipy.special.softmax(-E / T)
+    mag = 0
+    for i, vec in enumerate(vecs.T):
+        mag += mag_basis @ vec**2 * boltzmann_factors[i]
+    return mag
+
+def qea(H, T):
+    '''Edward-Anderson parameter'''
+    d = len(H)
+    n = int(np.log2(d))
+    E, vecs = la.eigh(H)
+    if T == 0:
+        boltzmann_factors = np.array(E == min(E), dtype=int) / sum(np.array(E == min(E), dtype=int))
+    else:
+        boltzmann_factors = scipy.special.softmax(-E / T)
+
+    qea_val = 0
+    for i in range(n):
+        sigma_i = Z(i, n)
+        s = 0
+        for vec_index, vec in enumerate(vecs.T):
+            s += vec @ sigma_i @ vec.T * boltzmann_factors[vec_index]
+        qea_val += s**2
+
+    return qea_val / n
+
 # Plotting functions
 def plot_schedule(schedule, schedule_interpolator = None):
     '''Plots annealing schedule with optional interpolation.'''
