@@ -1,5 +1,5 @@
 # Path
-#from src.path import local_path
+from src.path import projectdir
 
 # Linear algebra
 import numpy as np
@@ -55,9 +55,6 @@ plt.rcParams.update(
 # Golden ratio
 figure_size_x = 6.0462
 figure_size_y = figure_size_x/1.618
-
-# substitute with your path
-projectdir = 'C:/Users/ivash/projects/qmcmc/quantum-mcmc/'
 
 # Conversion funtions
 def int_to_bin(i, n):
