@@ -22,14 +22,20 @@ import pickle
 from tqdm import tqdm
 import joblib
 
-# Colors 
-blue = '#0000BF'
-red = '#B22222'
-light_grey = '#e5e5e5e5'
-grey = '#A9A9A9'
-dark_grey = '#555555'
-white = '#FFFFFF'
-black = '#000000'
+# Define colors with names
+colors = {
+    "red": "#e41a1c",
+    "blue": "#377eb8",
+    "green": "#4daf4a",
+    "purple": "#984ea3",
+    "orange": "#ff7f00",
+    "yellow": "#ffff33",
+    "brown": "#a65628",
+    "pink": "#f781bf",
+    "grey": "#999999",
+    "black": "#000000",
+    "white": "#ffffff"
+}
 
 plt.rcParams.update(
     {
