@@ -569,11 +569,11 @@ def plot_schedule(schedule, schedule_interpolator = None):
     # s = np.concatenate(([0],np.linspace(RAMP_UP_TIME_FRACTION,1-RAMP_UP_TIME_FRACTION, n_points-2),[1]))
     s = np.linspace(0,1,n_points)
     if schedule_interpolator is None:
-        plt.plot(s, schedule, '.--', color = red)
+        plt.plot(s, schedule, '.--', color = colors['red'])
     else:
         x_cont = np.linspace(0,1,100)
-        plt.plot(x_cont, schedule_interpolator(x_cont), '--', color = grey)
-        plt.plot(s, schedule, '.', color = red)
+        plt.plot(x_cont, schedule_interpolator(x_cont), '--', color = colors['grey'])
+        plt.plot(s, schedule, '.', color = colors['red'])
     plt.xlabel('s')
     plt.ylabel('$\gamma(s)$')
     plt.title('$H(\gamma) = (1-\gamma) H_{prob} + \gamma H_{mix}$')
