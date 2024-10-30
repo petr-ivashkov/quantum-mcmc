@@ -52,7 +52,7 @@ plt.rcParams.update(
         "savefig.bbox": "tight",
         "font.size": 7,
         "font.family": "serif",
-        "lines.markersize": 6,
+        "lines.markersize": 4,
         "lines.linewidth": 1,
         'axes.axisbelow' : True
     }
