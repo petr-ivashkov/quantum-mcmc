@@ -525,13 +525,16 @@ def get_schedule_interpolator(schedule, kind='linear'):
     return interp1d(s, schedule, kind=kind)
 
 # Order parameters for quantum SK model
-def magnetization(H, T):
+def magnetization(H, T, abs=True):
     d = len(H)
     n = int(np.log2(d))
     mag_basis = np.zeros(d)
     for i in range(d):
         s = int_to_bin(i, n)
-        mag_basis[i] = (s.count('0') - s.count('1')) / n
+        if abs:
+            mag_basis[i] = np.abs(s.count('0') - s.count('1')) / n
+        else:
+            mag_basis[i] = (s.count('0') - s.count('1')) / n
     E, vecs = la.eigh(H)
     if T == 0:
         boltzmann_factors = np.array(E == min(E), dtype=int) / sum(np.array(E == min(E), dtype=int))
