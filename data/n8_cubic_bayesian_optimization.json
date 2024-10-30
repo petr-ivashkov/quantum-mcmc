@@ -1,0 +1,22 @@
+{
+    "n": 8,
+    "T": 1,
+    "interpolator_kind": "cubic",
+    "t_max": 12,
+    "schedule_opt": [
+        0.0,
+        0.372111023102786,
+        0.5303360603352595,
+        0.48179849581662565,
+        0.5303360603352595,
+        0.372111023102786,
+        0.0
+    ],
+    "loss_opt": 0.08045241920527925,
+    "first_optimizer": "BO",
+    "second_optimizer": "None",
+    "num_random_models": 100,
+    "n_iter": 200,
+    "init_points": 20,
+    "kappa": 2
+}
