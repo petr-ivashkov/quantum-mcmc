@@ -1,9 +1,9 @@
 #!/bin/bash
 
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=32
 #SBATCH --time=24:00:00
-#SBATCH --job-name="time_dependency"
+#SBATCH --job-name="time_dependency_short_times"
 #SBATCH --mem-per-cpu=1024
 
 export OMP_NUM_THREADS=48;
