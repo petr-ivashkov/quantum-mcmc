@@ -1,5 +1,5 @@
-"""# Path
-from src.path import projectdir"""
+# Path
+from src.path import projectdir
 
 # Linear algebra
 import numpy as np
@@ -607,15 +607,15 @@ def display_video(video, fps=30, cmap='coolwarm'):
 # Other useful functions
 def save_in_json(data, file_path):
     '''Save the dictionary as a JSON file.'''
-    with open(file_path, 'w') as json_file:
+    with open(projectdir+file_path, 'w') as json_file:
         json.dump(data, json_file, indent=4)
     # Check if writing was successful
-    with open(file_path, 'r') as json_file:
+    with open(projectdir+file_path, 'r') as json_file:
         data_loaded = json.load(json_file)
     assert data_loaded == data, 'An error occured when saving JSON.'
 
 def load_from_json(file_path):
     '''Load data from a JSON file and return it as a dictionary.'''
-    with open(file_path, 'r') as json_file:
+    with open(projectdir+file_path, 'r') as json_file:
         data = json.load(json_file)
     return data
