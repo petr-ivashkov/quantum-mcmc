@@ -24,10 +24,10 @@ import joblib
 
 # Define colors with names
 colors = {
-    "red": "#e41a1c",
+    "red": "#D22B2B",
     "blue": "#377eb8",
     "green": "#4daf4a",
-    "purple": "#984ea3",
+    "purple": "#702963",
     "orange": "#ff7f00",
     "yellow": "#d1b43f",
     "brown": "#a65628",
