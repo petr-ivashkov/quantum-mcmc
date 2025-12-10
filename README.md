@@ -34,7 +34,7 @@ conda activate qmcmc
 ## Typical Usage
 ```python
 from src.functions import (
-    RandomIsingModel, get_proposal_mat_quantum_layden,
+    RandomIsingModel, get_proposal_mat_quantum,
     get_transition_matrix, get_trajectory, get_delta
 )
 
