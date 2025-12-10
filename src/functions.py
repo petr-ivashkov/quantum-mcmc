@@ -33,6 +33,7 @@ colors = {
     "brown": "#a65628",
     "pink": "#f781bf",
     "grey": "#999999",
+    "dark grey": "#5b5b5b",
     "black": "#000000",
     "white": "#ffffff"
 }
@@ -115,6 +116,7 @@ class IsingModel:
         assert np.allclose(J.T, J), 'J must be symmetric.'
         assert np.all(np.diag(J) == 0), 'Diagonal elements of J must be zero.'
 
+        # Rescale couplings to keep energies comparable across instance sizes
         self.alpha = np.sqrt(self.n / (0.5*la.norm(J, ord='fro')**2 + la.norm(h, ord=2)**2))
         self.J_rescaled = self.J * self.alpha 
         self.h_rescaled = self.h * self.alpha
@@ -259,7 +261,7 @@ def get_mixing_hamiltonian(n):
     '''Simple sparse mixing Hamiltonian.'''
     return sum([X(i,n) for i in range(n)])
 
-# Precompute mixing Hamiltonians 
+# Precompute mixing Hamiltonians to avoid rebuilding dense matrices in hot loops
 H_mixer_list = [get_mixing_hamiltonian(n) for n in range(1,11)]
 
 def get_proposal_mat_quantum(m, gamma=0.7, t=1):
@@ -342,6 +344,7 @@ def get_proposal_mat_quantum_layden(m, gamma_lims=(0.25, 0.6), gamma_steps=20, t
     gamma_starts, step_size = np.linspace(gamma_lims[0], gamma_lims[1], num=gamma_steps, endpoint=False, retstep=True)
     gamma_range = gamma_starts + step_size/2
 
+    # Vectorized implementation of the Nature 619 mixer-based proposal (D. Layden et al)
     prop_list = []
     for gamma in gamma_range:
         H = (1-gamma)*H_ising + gamma*H_mixer
