@@ -1,6 +1,6 @@
 # Quantum MCMC for Ising Spin Glasses
 
-This repository is the official codebase accompanying [Phys. Rev. A **111**, 042615 (2025)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.111.042615). It explores quantum-inspired Markov chain Monte Carlo (MCMC) sampling for Ising spin-glass instances and performs a comprehensive analysis of the quantum-enhanced Monte Carlo method  [Nature **619**, 282–287 (2023)](https://www.nature.com/articles/s41586-023-06095-4).
+This repository is the official codebase accompanying [Phys. Rev. A **111**, 042615 (2025)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.111.042615). It performs a comprehensive analysis of the quantum-enhanced Monte Carlo method for Ising spin-glass instances [Nature **619**, 282–287 (2023)](https://www.nature.com/articles/s41586-023-06095-4).
 
 ## Repository Layout
 - `src/functions.py` - Core library for building Ising instances, quantum operators, proposal matrices, Metropolis-Hastings transitions, time-dependent Schrodinger solvers, annealing schedules, observables, plotting helpers, and JSON I/O.
