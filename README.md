@@ -39,7 +39,7 @@ from src.functions import (
 )
 
 m = RandomIsingModel(n=5, seed=0)
-proposal = get_proposal_mat_quantum(m, gamma_steps=20)
+proposal = get_proposal_mat_quantum(m, gamma=0.7, t=1)
 P = get_transition_matrix(m, T=0.5, proposal_mat=proposal)
 gap = get_delta(P)
 traj = get_trajectory(P, num_moves=1000)
